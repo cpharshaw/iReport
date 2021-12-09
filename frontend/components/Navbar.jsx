@@ -14,12 +14,12 @@ const Navbar = props => {
                 <div className="logo" style={{ padding: "0", background: "" }}>
                     <Link href="/">
                         <a style={{ margin: "initial" }}>
-                            <Image src="/radian_logo.png" alt="site logo" width={214} height={66} />
-                            {/* <Image src="/reportImg.png" alt="site logo" width={291} height={173} /> */}
+                            <Image src="/acmeInsurance.png" alt="site logo" width={214} height={66} />
+                            {/* <Image src="/radian_logo.png" alt="site logo" width={214} height={66} /> */}
                         </a>
                     </Link>
                 </div>
-                <h1 style={{}} className={styles.title}><b><i>Radian iReport</i></b></h1>
+                <h1 style={{}} className={styles.title}><b><i>Acme iReport</i></b></h1>
                 {/* <Link href="/"><a>Home</a></Link>
                 <Link href="/about"><a>About</a></Link>
                 <Link href="/ninjas/"><a>Report Listing</a></Link> */}
