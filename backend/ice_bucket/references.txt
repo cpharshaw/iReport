@@ -1,0 +1,7 @@
+// https://tediousjs.github.io/node-mssql/
+// https://www.connectionstrings.com/microsoft-odbc-driver-17-for-sql-server/
+// https://docs.microsoft.com/en-us/sql/integration-services/import-export-data/connect-to-an-odbc-data-source-sql-server-import-and-export-wizard?view=sql-server-ver15#odbc_dsn
+
+// https://www.tutorialsteacher.com/nodejs/access-sql-server-in-nodejs
+// https://stackoverflow.com/questions/30356148/how-can-i-use-a-single-mssql-connection-pool-across-several-routes-in-an-express
+    // https://www.sitepoint.com/understanding-module-exports-exports-node-js/
