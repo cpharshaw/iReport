@@ -1,3 +1,5 @@
+// var os = require('os');
+// console.log(os.userInfo().username);
 
 const sqlLogic = (
     reportType,
@@ -10,7 +12,7 @@ const sqlLogic = (
     whereStatement
 ) => {
 
-
+       // ${customerIDs ? `'' as [Radian Notes],` : null}   
     const queryAppend = `
         DECLARE @json NVARCHAR(MAX) = N'${JSON.stringify(file)}';
         ${customerIDs};
@@ -18,7 +20,20 @@ const sqlLogic = (
         SELECT DISTINCT
             ${selectFromFileStatement},
 
-            ${customerIDs ? `'' as [Radian Notes],` : null}            
+            ${
+                customerIDs ? 
+                    `case
+                            when prod.CertificateNum is null or prod.CertificateNum = '' then '(Cannot ID)'
+                            when (
+                                prod.ServicerLenderID not in (select distinct customerID from #customerIDs)
+                                    and
+                                prod.PremiumServicerLenderID not in (select distinct customerID from #customerIDs)
+                            ) then '(Not located in servicing portfolio)' 
+                            else null
+                        end as [Radian Notes],` 
+                        : 
+                    null
+            }   
 
             ${selectStatement}
 
@@ -36,87 +51,80 @@ const sqlLogic = (
             left join BI_PRESENTATION.PADExtract.PADReportData as ref  
                 on root.Cert = ref.[Cert No.]
 
-    `
-        +
-
-    `
-        where (
-            prod.CertificateNum is not null
-                and
-            (
-                prod.ServicerLenderID in (select distinct customerID from #customerIDs) 
-                    or 
-                prod.PremiumServicerLenderID in (select distinct customerID from #customerIDs)
-            )
-        )
-                
-        union
-
-        SELECT DISTINCT
-            ${selectFromFileStatement},
-
-            ${customerIDs ? `'(Not located in servicing portfolio)' as [Radian Notes],` : null}            
-
-            ${selectStatement}
-
-            ${fromSourceStatement == "production" ? ", cast(prod.DailySummaryDate as date) as [DataAsOfDt]" :
-            fromSourceStatement == "PreMaster" ? ", cast(prod.MonthEndDt as date) as [DataAsOfDt]" : null}                
-
-        FROM OPENJSON ( @json ) WITH ( 
-            ${withStatement} 
-        ) as root
-
-            left join BI_PRESENTATION.smsasdata.${fromSourceStatement} as prod
-                on root.Cert = prod.CertificateNum
-
-            left join BI_PRESENTATION.PADExtract.PADReportData as ref  
-                on root.Cert = ref.[Cert No.]      
-                
-        where (
-            prod.CertificateNum is not null
-                and
-            (
-                prod.ServicerLenderID not in (select distinct customerID from #customerIDs) 
-                    and 
-                prod.PremiumServicerLenderID not in (select distinct customerID from #customerIDs)
-            )
-        )
-
-        union
-
-        SELECT DISTINCT
-            ${selectFromFileStatement},
-
-            ${customerIDs ? `'(Cannot ID)' as [Radian Notes], ` : null}            
-
-            ${selectStatement}
-
-            ${fromSourceStatement == "production" ? ", cast(prod.DailySummaryDate as date) as [DataAsOfDt]" :
-            fromSourceStatement == "PreMaster" ? ", cast(prod.MonthEndDt as date) as [DataAsOfDt]" : null}                
-
-        FROM OPENJSON ( @json ) WITH ( 
-            ${withStatement} 
-        ) as root
-
-            left join BI_PRESENTATION.smsasdata.${fromSourceStatement} as prod
-                on root.Cert = prod.CertificateNum
-
-            left join BI_PRESENTATION.PADExtract.PADReportData as ref  
-                on root.Cert = ref.[Cert No.]      
-                
-        where (
-            prod.CertificateNum is null
-        )
-
         order by 
             [Radian Notes] asc
-    `
-        +
-    `
         ;
-
+    
         drop table #customerIDs;
     `
+    //     where (
+    //         prod.CertificateNum is not null
+    //             and
+    //         (
+    //             prod.ServicerLenderID in (select distinct customerID from #customerIDs) 
+    //                 or 
+    //             prod.PremiumServicerLenderID in (select distinct customerID from #customerIDs)
+    //         )
+    //     )
+                
+    //     union
+
+    //     SELECT DISTINCT
+    //         ${selectFromFileStatement},
+
+    //         ${customerIDs ? `'(Not located in servicing portfolio)' as [Radian Notes],` : null}            
+
+    //         ${selectStatement}
+
+    //         ${fromSourceStatement == "production" ? ", cast(prod.DailySummaryDate as date) as [DataAsOfDt]" :
+    //         fromSourceStatement == "PreMaster" ? ", cast(prod.MonthEndDt as date) as [DataAsOfDt]" : null}                
+
+    //     FROM OPENJSON ( @json ) WITH ( 
+    //         ${withStatement} 
+    //     ) as root
+
+    //         left join BI_PRESENTATION.smsasdata.${fromSourceStatement} as prod
+    //             on root.Cert = prod.CertificateNum
+
+    //         left join BI_PRESENTATION.PADExtract.PADReportData as ref  
+    //             on root.Cert = ref.[Cert No.]      
+                
+    //     where (
+    //         prod.CertificateNum is not null
+    //             and
+    //         (
+    //             prod.ServicerLenderID not in (select distinct customerID from #customerIDs) 
+    //                 and 
+    //             prod.PremiumServicerLenderID not in (select distinct customerID from #customerIDs)
+    //         )
+    //     )
+
+    //     union
+
+    //     SELECT DISTINCT
+    //         ${selectFromFileStatement},
+
+    //         ${customerIDs ? `'(Cannot ID)' as [Radian Notes], ` : null}            
+
+    //         ${selectStatement}
+
+    //         ${fromSourceStatement == "production" ? ", cast(prod.DailySummaryDate as date) as [DataAsOfDt]" :
+    //         fromSourceStatement == "PreMaster" ? ", cast(prod.MonthEndDt as date) as [DataAsOfDt]" : null}                
+
+    //     FROM OPENJSON ( @json ) WITH ( 
+    //         ${withStatement} 
+    //     ) as root
+
+    //         left join BI_PRESENTATION.smsasdata.${fromSourceStatement} as prod
+    //             on root.Cert = prod.CertificateNum
+
+    //         left join BI_PRESENTATION.PADExtract.PADReportData as ref  
+    //             on root.Cert = ref.[Cert No.]      
+                
+    //     where (
+    //         prod.CertificateNum is null
+    //     )
+
 
 
     const queryPortfolio = `
@@ -138,7 +146,8 @@ const sqlLogic = (
         )
         ;
 
-        drop table #customerIDs;
+        drop table #customerIDs
+        ;
     `
 
     const query = reportType == "append" ? queryAppend : queryPortfolio;

@@ -77,81 +77,125 @@ const createReport = async (req, res) => {
 
         try {
             file_formatted = await excelFileFormatter(excelFile);
+
+            const fieldsArr = Object.keys(file_formatted[0]);
+
+            let new_fieldsTypesValuesObj = {};
+
+            fieldsArr.forEach((field, i) => { // look for a value in a column to determine its type.  it will use the type of the first found value in a column
+
+                new_fieldsTypesValuesObj[field] = {
+                    "type": null,
+                    "value": null
+                };
+
+                file_formatted.forEach((record, j) => {
+
+                    if (!new_fieldsTypesValuesObj[field].value) { // this is where the magic happens
+                        new_fieldsTypesValuesObj[field].value = record[field];
+                        new_fieldsTypesValuesObj[field].type = typeof record[field];
+                    };
+
+                });
+
+            });
+
+            const fieldsTypesValuesObj = { ...new_fieldsTypesValuesObj }; // just in case the loop hasnt fnished, i created a new object to try to make the rest wait
+
+            Object.keys(fieldsTypesValuesObj).forEach((key, i) => {
+
+                const record = fieldsTypesValuesObj[key];
+                const value = record.value;
+                const type = record.type;
+
+                const formatReal =
+                    (
+                        type == "number"
+                        &&
+                        (key.search("date") >= 0 || key.search("Date") >= 0 || key.search("dt") >= 0 || key.search("Dt") >= 0)
+                        &&
+                        30000 <= value && value <= 63000 //just a final check to make sure the date value, in number of days, is reasonable
+                    ) ? "DATETIME"
+                        :
+                        (
+                            (
+                                type == "number"
+                                &&
+                                value.toString().search(".") >= 0
+                                &&
+                                (key.search("date") < 0 && key.search("Date") < 0 && key.search("dt") < 0 && key.search("Dt") < 0)
+                            )
+                        ) ? "decimal(20,2)"
+                            :
+                            (
+                                type == "number"
+                            ) ? "BIGINT"
+                                : "VARCHAR(MAX)";
+                ;
+
+
+                const formatSQL =
+                    (
+                        type == "number"
+                        &&
+                        (key.search("date") >= 0 || key.search("Date") >= 0 || key.search("dt") >= 0 || key.search("Dt") >= 0)
+                        &&
+                        30000 <= value && value <= 63000 //just a final check to make sure the date value, in number of days, is reasonable
+                    ) ? "BIGINT"
+                        :
+                        (
+                            (
+                                type == "number"
+                                &&
+                                value.toString().search(".") >= 0
+                                &&
+                                (key.search("date") < 0 && key.search("Date") < 0 && key.search("dt") < 0 && key.search("Dt") < 0)
+                            )
+                        ) ? "decimal(20,2)"
+                            :
+                            (
+                                type == "number"
+                            ) ? "BIGINT"
+                                : "VARCHAR(MAX)";
+                ;
+
+                // console.log("key ; formatReal ; record --->", key, " --- ", formatReal, " --- ", record);
+
+                // console.log("key ; formatSQL ; record --->", key, " --- ", formatSQL, " --- ", record);
+
+                if (key.toUpperCase() == "CERT") {
+                    selectFromFileStatement += `
+                    root.Cert as [File Certificate Number], 
+                `;
+                    withStatement += `
+                    Cert VARCHAR(20), 
+                `;
+                } else if (formatReal == "DATETIME") {
+                    selectFromFileStatement += `
+                    cast(format(convert(date,(CAST(root.${key} - 2 as DATETIME ))),'MM/dd/yyyy') as date) as [${key}], 
+                `;
+                    withStatement += `
+                    ${key} ${formatSQL.toUpperCase()}, 
+                `;
+                } else {
+                    selectFromFileStatement += `
+                    root.${key} as [${key}], 
+                `;
+                    withStatement += `
+                    ${key} ${formatSQL.toUpperCase()}, 
+                `;
+                }
+
+                file_formatted = JSON.parse(JSON.stringify(file_formatted).replace("'", "''"));
+            });
         } catch (err) {
             console.log(err)
             return res.send({ error: true });
         }
 
-        Object.keys(file_formatted[0]).forEach((key, i) => {
-
-            const record = file_formatted[0];
-            const value = record[key];
-
-            const formatReal =
-                (
-                    (key.search("date") >= 0 || key.search("Date") >= 0 || key.search("dt") >= 0 || key.search("Dt") >= 0)
-                    &&
-                    (value == "" || !value || (typeof value == "number" && value.toString().search(".") <= 0))
-                ) ? "DATETIME"
-                    :
-                    (
-                        (key.search("date") >= 0 || key.search("Date") >= 0 || key.search("dt" >= 0) || key.search("Dt") >= 0)
-                        ||
-                        (value == "" || !value || (typeof value == "number" && value.toString().search(".") <= 0))
-                    ) ? "INT"
-                        :
-                        (
-                            ((typeof value == "number" && value.toString().search(".") > 0))
-                        ) ? "DECIMAL" : "VARCHAR(MAX)";
-            ;
-
-            const formatSQL =
-                (
-                    (key.search("date") >= 0 || key.search("Date") >= 0 || key.search("dt") >= 0 || key.search("Dt") >= 0)
-                    &&
-                    (value == "" || !value || (typeof value == "number" && value.toString().search(".") <= 0))
-                ) ? "INT"
-                    :
-                    (
-                        (key.search("date") >= 0 || key.search("Date") >= 0 || key.search("dt") >= 0 || key.search("Dt") >= 0)
-                        ||
-                        (value == "" || !value || (typeof value == "number" && value.toString().search(".") <= 0))
-                    ) ? "INT"
-                        :
-                        (
-                            ((typeof value == "number" && value.toString().search(".") > 0))
-                        ) ? "DECIMAL" : "VARCHAR(MAX)";
-            ;
-
-            if (key.toUpperCase() == "CERT") {
-                selectFromFileStatement += `
-                    root.Cert as [File Certificate Number], 
-                `;
-                withStatement += `
-                    Cert VARCHAR(8), 
-                `;
-            } else if (formatReal == "DATETIME") {
-                selectFromFileStatement += `
-                    cast(format(convert(date,(CAST(root.${key} - 2 as DATETIME ))),'MM/dd/yyyy') as date) as [${key}], 
-                `;
-                withStatement += `
-                    ${key} ${formatSQL.toUpperCase()}, 
-                `;
-            } else {
-                selectFromFileStatement += `
-                    root.${key} as [${key}], 
-                `;
-                withStatement += `
-                    ${key} ${formatSQL.toUpperCase()}, 
-                `;
-            }
-
-            file_formatted = JSON.parse(JSON.stringify(file_formatted).replace("'", "''"));
-        });
     } else if (reportType == "portfolio") {
 
         requestedCriteria_cleaned = Object.keys(requestedCriteria).map((key, i) => {
-            // console.log("key", key)
 
             let value;
             if (key == "Transaction Event") {
@@ -168,14 +212,9 @@ const createReport = async (req, res) => {
                         JSON.parse(stateCriterion).entryValue.trim()
                     )
                 }).join(" or ") + ")";
-                // console.log("value ---> ", value)
             } else if (key != "Transaction Date Range") {
                 value = requestedCriteria[key].entryValue.trim();
-            }
-
-            // value = ("(" + JSON.stringify(...requestedCriteria[key].map((stateCriterion, s) => {
-            //     return JSON.parse(stateCriterion).entryValue.trim();
-            // })) + ")").replace('"','').replace('"','');            
+            }      
 
             return value;
         }).join(" and ").replace("and  and", " and ");
@@ -203,12 +242,10 @@ const createReport = async (req, res) => {
 
     try {
 
-        const results = await runQuery(queryData);      
+        const results = await runQuery(queryData);
 
         const excelData = results.results.recordset;
         const count = excelData.length;
-
-        console.log("excelData ---> ", excelData)
 
         if (count && count >= 1000000) {
             res.send({
@@ -218,9 +255,9 @@ const createReport = async (req, res) => {
         } else {
             const sqlLogic = [
                 ["Logic"],
-                [results.sqlLogic.trim().replace('""', '"').substring(0,30000)],
-                [results.sqlLogic.trim().replace('""', '"').substring(30000,60000)],
-                [results.sqlLogic.trim().replace('""', '"').substring(60000,90000)],
+                [results.sqlLogic.trim().replace('""', '"').substring(0, 30000)],
+                [results.sqlLogic.trim().replace('""', '"').substring(30000, 60000)],
+                [results.sqlLogic.trim().replace('""', '"').substring(60000, 90000)],
             ];
 
             let newWb = xlsx.utils.book_new();
@@ -228,7 +265,7 @@ const createReport = async (req, res) => {
             newWb.SheetNames.push("Data");
             newWb.SheetNames.push("SQL");
 
-            const updatedExcelData  = reportType == "portfolio" || requestedReportForInternalUse ? excelData : excelData.map(record => {
+            const updatedExcelData = reportType == "portfolio" || requestedReportForInternalUse ? excelData : excelData.map(record => {
 
                 let newRecord = {};
 
@@ -243,8 +280,8 @@ const createReport = async (req, res) => {
                     }
                 });
 
-                return { 
-                    ...newRecord 
+                return {
+                    ...newRecord
                 };
 
             });
@@ -257,8 +294,8 @@ const createReport = async (req, res) => {
             newWb.Sheets["SQL"] = sql;
 
             newWb.Props = {
-                Title: "test",
-                Author: "Craig Harshaw",
+                Title: "Report",
+                Author: "You- you did it!!",
                 // CreatedDate: new Date(2021, 9, 23)
             };
 

@@ -17,7 +17,7 @@ const excelFileFormatter = async excelFile => {
     const dataSheet = wb.Sheets[sheetName];
     const dataSheet_data = utils.sheet_to_json(dataSheet);
 
-    // console.log("dataSheet_data")
+    // console.log("dataSheet_data", dataSheet_data)
 
     const headersFinal = [];
 

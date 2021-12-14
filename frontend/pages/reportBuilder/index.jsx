@@ -143,8 +143,8 @@ const ReportBuilder = () => {
         if (1 <= res.data.count && res.data.count < 1000000) {
           setReportResult("success");
           setReportComplete(true);
-          // console.log("count ---> ", res.data.count);
-          xlsx.writeFile(res.data.file, 'iReport - ' + customerIDs.trim().replace(/[^a-z0-9,]/gi, '') + ' - ' + selectedReportTypeName.trim().replace(/[^a-z0-9,]/gi, '') + ' - run on ' + dateText + '.xlsb', { bookType: "xlsb", type: "binary", cellDates: true });
+
+          xlsx.writeFile(res.data.file, 'iReport - ' + customerIDs.trim().replace(/[^a-z0-9,]/gi, '') + ' - ' + selectedReportTypeName.trim().replace(/[^a-z0-9 ,]/gi, '') + ' - run on ' + dateText + '.xlsb', { bookType: "xlsb", type: "binary", cellDates: true });
         } else if (res.data.count <= 0) {
           setReportResult("noRecords");
           setReportComplete(true);
@@ -445,7 +445,7 @@ const ReportBuilder = () => {
   return (
     <>
       <Head>
-        <title>Acme iReport | Report Builder</title>
+        <title>Radian iReport | Report Builder</title>
         <meta name="keywords" content="reportBuilder" />
       </Head>
 

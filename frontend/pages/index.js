@@ -16,11 +16,11 @@ const Home = () => {
       </Head>
 
       <Container style={{ margin: "0", padding: "0" }}>
-        <h1 style={{ color: "#333", textAlign: "center", paddingTop: "0" }} className={styles.title}><b><i>Acme iReport</i></b></h1>
+        <h1 style={{ color: "#333", textAlign: "center", paddingTop: "0" }} className={styles.title}><b><i>Radian iReport</i></b></h1>
 
         <Box sx={{ width: "100%", display: 'grid', alignItems: "center", alignContent: "center", justifyContent: "center", textAlign: "center" }}>
 
-          <p className={styles.text}>A self-service reporting tool for Acme servicing information.</p>
+          <p className={styles.text}>A self-service reporting tool for Radian servicing information.</p>
 
           <br />
 
