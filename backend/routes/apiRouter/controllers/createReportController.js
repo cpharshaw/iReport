@@ -21,7 +21,7 @@ const createReport = async (req, res) => {
         requestedReportForInternalUse
     } = body;
 
-    // console.log("requestedCriteria", requestedCriteria)
+    console.log("requestedReportForInternalUse", requestedReportForInternalUse)
 
     const {
         file,
@@ -102,6 +102,8 @@ const createReport = async (req, res) => {
 
             const fieldsTypesValuesObj = { ...new_fieldsTypesValuesObj }; // just in case the loop hasnt fnished, i created a new object to try to make the rest wait
 
+            console.log(fieldsTypesValuesObj)
+
             Object.keys(fieldsTypesValuesObj).forEach((key, i) => {
 
                 const record = fieldsTypesValuesObj[key];
@@ -109,54 +111,82 @@ const createReport = async (req, res) => {
                 const type = record.type;
 
                 const formatReal =
-                    (
-                        type == "number"
-                        &&
-                        (key.search("date") >= 0 || key.search("Date") >= 0 || key.search("dt") >= 0 || key.search("Dt") >= 0)
-                        &&
-                        30000 <= value && value <= 63000 //just a final check to make sure the date value, in number of days, is reasonable
-                    ) ? "DATETIME"
-                        :
+                    !value ? "VARCHAR(MAX)" :
                         (
                             (
                                 type == "number"
                                 &&
-                                value.toString().search(".") >= 0
+                                value.toString().indexOf(".") >= 0
                                 &&
-                                (key.search("date") < 0 && key.search("Date") < 0 && key.search("dt") < 0 && key.search("Dt") < 0)
+                                (key.indexOf("date") >= 0 || key.indexOf("Date") >= 0 || key.indexOf("dt") >= 0 || key.indexOf("Dt") >= 0)
+                                &&
+                                30000 <= value && value <= 63000 //just a final check to make sure the date value, in number of days, is reasonable                            
                             )
-                        ) ? "decimal(20,2)"
+                        ) ? "datetime"
                             :
                             (
                                 type == "number"
-                            ) ? "BIGINT"
-                                : "VARCHAR(MAX)";
+                                &&
+                                value.toString().indexOf(".") < 0
+                                &&
+                                (key.indexOf("date") >= 0 || key.indexOf("Date") >= 0 || key.indexOf("dt") >= 0 || key.indexOf("Dt") >= 0)
+                                &&
+                                30000 <= value && value <= 63000 //just a final check to make sure the date value, in number of days, is reasonable
+                            ) ? "date"
+                                :
+                                (
+                                    (
+                                        type == "number"
+                                        &&
+                                        value.toString().indexOf(".") >= 0
+                                    )
+                                ) ? "decimal(20,2)"
+                                    :
+
+                                    (
+                                        type == "number"
+                                    ) ? "BIGINT"
+                                        : "VARCHAR(MAX)";
                 ;
 
 
                 const formatSQL =
-                    (
-                        type == "number"
-                        &&
-                        (key.search("date") >= 0 || key.search("Date") >= 0 || key.search("dt") >= 0 || key.search("Dt") >= 0)
-                        &&
-                        30000 <= value && value <= 63000 //just a final check to make sure the date value, in number of days, is reasonable
-                    ) ? "BIGINT"
-                        :
+                    !value ? "VARCHAR(MAX)" :
                         (
                             (
                                 type == "number"
                                 &&
-                                value.toString().search(".") >= 0
+                                value.toString().indexOf(".") >= 0
                                 &&
-                                (key.search("date") < 0 && key.search("Date") < 0 && key.search("dt") < 0 && key.search("Dt") < 0)
+                                (key.indexOf("date") >= 0 || key.indexOf("Date") >= 0 || key.indexOf("dt") >= 0 || key.indexOf("Dt") >= 0)
+                                &&
+                                30000 <= value && value <= 63000 //just a final check to make sure the date value, in number of days, is reasonable                            
                             )
-                        ) ? "decimal(20,2)"
+                        ) ? "decimal(28,10)"
                             :
                             (
                                 type == "number"
+                                &&
+                                value.toString().indexOf(".") < 0
+                                &&
+                                (key.indexOf("date") >= 0 || key.indexOf("Date") >= 0 || key.indexOf("dt") >= 0 || key.indexOf("Dt") >= 0)
+                                &&
+                                30000 <= value && value <= 63000 //just a final check to make sure the date value, in number of days, is reasonable
                             ) ? "BIGINT"
-                                : "VARCHAR(MAX)";
+                                :
+                                (
+                                    (
+                                        type == "number"
+                                        &&
+                                        value.toString().indexOf(".") >= 0
+                                    )
+                                ) ? "decimal(20,2)"
+                                    :
+
+                                    (
+                                        type == "number"
+                                    ) ? "BIGINT"
+                                        : "VARCHAR(MAX)";
                 ;
 
                 // console.log("key ; formatReal ; record --->", key, " --- ", formatReal, " --- ", record);
@@ -170,9 +200,16 @@ const createReport = async (req, res) => {
                     withStatement += `
                     Cert VARCHAR(20), 
                 `;
-                } else if (formatReal == "DATETIME") {
+                } else if (formatReal == "datetime") {
                     selectFromFileStatement += `
-                    cast(format(convert(date,(CAST(root.${key} - 2 as DATETIME ))),'MM/dd/yyyy') as date) as [${key}], 
+                    cast(format(CAST(root.${key} - 2 as datetime), 'MM/dd/yyyy h:mm:ss tt', 'en-US') as SMALLDATETIME) as [${key}], 
+                `;
+                    withStatement += `
+                    ${key} ${formatSQL.toUpperCase()}, 
+                `;
+                } else if (formatReal == "date") {
+                    selectFromFileStatement += `
+                    cast(format(CAST(root.${key} - 2 as datetime), 'MM/dd/yyyy') as date) as [${key}], 
                 `;
                     withStatement += `
                     ${key} ${formatSQL.toUpperCase()}, 
@@ -214,7 +251,7 @@ const createReport = async (req, res) => {
                 }).join(" or ") + ")";
             } else if (key != "Transaction Date Range") {
                 value = requestedCriteria[key].entryValue.trim();
-            }      
+            }
 
             return value;
         }).join(" and ").replace("and  and", " and ");
@@ -240,6 +277,15 @@ const createReport = async (req, res) => {
         whereStatement: requestedCriteria_cleaned
     };
 
+    console.log("------------------------------------------------------")
+    console.log(queryData.selectFromFileStatement)
+    console.log(queryData.selectStatement)
+    console.log(queryData.fromSourceStatement)
+    console.log(queryData.withStatement)
+    console.log(queryData.whereStatement)
+    console.log(queryData.customerIDs)
+    console.log("------------------------------------------------------")
+
     try {
 
         const results = await runQuery(queryData);
@@ -253,23 +299,43 @@ const createReport = async (req, res) => {
                 count: count || 1000001
             });
         } else {
+            const trimmedSQLLogic = results.sqlLogic.trim().replace('""', '"');
+
             const sqlLogic = [
-                ["Logic"],
-                [results.sqlLogic.trim().replace('""', '"').substring(0, 30000)],
-                [results.sqlLogic.trim().replace('""', '"').substring(30000, 60000)],
-                [results.sqlLogic.trim().replace('""', '"').substring(60000, 90000)],
+                ["Logic"]
             ];
+            // const sqlLogic = [
+            //     ["Logic"],
+            //     [results.sqlLogic.trim().replace('""', '"').substring(0, 30000)],
+            //     [results.sqlLogic.trim().replace('""', '"').substring(30000, 60000)],
+            //     [results.sqlLogic.trim().replace('""', '"').substring(60000, 90000)],
+            // ];
+
+            for (i = 0; i < trimmedSQLLogic.length; i += 30000) {
+                sqlLogic.push([trimmedSQLLogic.substring(i, i + 30000)]);
+            }
+
+            // const sqlLogic = [
+            //     ["Logic"],
+            //     [results.sqlLogic.trim().replace('""', '"').substring(0, 30000)],
+            //     [results.sqlLogic.trim().replace('""', '"').substring(30000, 60000)],
+            //     [results.sqlLogic.trim().replace('""', '"').substring(60000, 90000)],
+            // ];            
 
             let newWb = xlsx.utils.book_new();
 
             newWb.SheetNames.push("Data");
             newWb.SheetNames.push("SQL");
 
+
+
             const updatedExcelData = reportType == "portfolio" || requestedReportForInternalUse ? excelData : excelData.map(record => {
 
                 let newRecord = {};
 
                 const dividerIndex = Object.keys(record).indexOf('Radian Notes');
+
+                console.log(record)
 
                 Object.keys(record).forEach((key, i) => {
                     if (i > dividerIndex && record['Radian Notes'].length > 0 && key != 'Radian Notes') {

@@ -29,7 +29,7 @@ const sqlLogic = (
                                     and
                                 prod.PremiumServicerLenderID not in (select distinct customerID from #customerIDs)
                             ) then '(Not located in servicing portfolio)' 
-                            else null
+                            else ''
                         end as [Radian Notes],` 
                         : 
                     null

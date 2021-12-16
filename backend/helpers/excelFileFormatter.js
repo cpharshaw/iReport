@@ -17,7 +17,7 @@ const excelFileFormatter = async excelFile => {
     const dataSheet = wb.Sheets[sheetName];
     const dataSheet_data = utils.sheet_to_json(dataSheet);
 
-    // console.log("dataSheet_data", dataSheet_data)
+    // console.log("dataSheet", dataSheet)
 
     const headersFinal = [];
 
@@ -50,7 +50,6 @@ const excelFileFormatter = async excelFile => {
 
         Object.keys(tempObj2).forEach(key => {
             const nr = key.trim().toLowerCase().replace(/\W/g, '_') == "date" ? "date1" : key.trim().toLowerCase().replace(/\W/g, '_');
-            // console.log("nr (helper code) ---> ", nr, record)
             const nr_adj_cert = nr == "cert" ? "Cert" : nr;
             finalRecord[nr_adj_cert] = nr_adj_cert == "Cert" ? record[key].toString().trim() : record[key];
         });
