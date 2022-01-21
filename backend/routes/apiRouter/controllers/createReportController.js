@@ -21,7 +21,7 @@ const createReport = async (req, res) => {
         requestedReportForInternalUse
     } = body;
 
-    console.log("requestedReportForInternalUse", requestedReportForInternalUse)
+    // console.log("requestedReportForInternalUse", requestedReportForInternalUse)
 
     const {
         file,
@@ -102,7 +102,7 @@ const createReport = async (req, res) => {
 
             const fieldsTypesValuesObj = { ...new_fieldsTypesValuesObj }; // just in case the loop hasnt fnished, i created a new object to try to make the rest wait
 
-            console.log(fieldsTypesValuesObj)
+            // console.log(fieldsTypesValuesObj)
 
             Object.keys(fieldsTypesValuesObj).forEach((key, i) => {
 
@@ -278,12 +278,13 @@ const createReport = async (req, res) => {
     };
 
     console.log("------------------------------------------------------")
-    console.log(queryData.selectFromFileStatement)
-    console.log(queryData.selectStatement)
-    console.log(queryData.fromSourceStatement)
-    console.log(queryData.withStatement)
-    console.log(queryData.whereStatement)
-    console.log(queryData.customerIDs)
+    // console.log(queryData.customerIDs)
+    // console.log(queryData.file)
+    // console.log(queryData.selectFromFileStatement)
+    // console.log(queryData.selectStatement)
+    // console.log(queryData.fromSourceStatement)
+    // console.log(queryData.withStatement)
+    // console.log(queryData.whereStatement)
     console.log("------------------------------------------------------")
 
     try {
@@ -315,19 +316,11 @@ const createReport = async (req, res) => {
                 sqlLogic.push([trimmedSQLLogic.substring(i, i + 30000)]);
             }
 
-            // const sqlLogic = [
-            //     ["Logic"],
-            //     [results.sqlLogic.trim().replace('""', '"').substring(0, 30000)],
-            //     [results.sqlLogic.trim().replace('""', '"').substring(30000, 60000)],
-            //     [results.sqlLogic.trim().replace('""', '"').substring(60000, 90000)],
-            // ];            
 
             let newWb = xlsx.utils.book_new();
 
             newWb.SheetNames.push("Data");
-            newWb.SheetNames.push("SQL");
-
-
+            // newWb.SheetNames.push("SQL");
 
             const updatedExcelData = reportType == "portfolio" || requestedReportForInternalUse ? excelData : excelData.map(record => {
 
@@ -335,11 +328,11 @@ const createReport = async (req, res) => {
 
                 const dividerIndex = Object.keys(record).indexOf('Radian Notes');
 
-                console.log(record)
+                // console.log(record)
 
                 Object.keys(record).forEach((key, i) => {
-                    if (i > dividerIndex && record['Radian Notes'].length > 0 && key != 'Radian Notes') {
-                        newRecord[key] = '';
+                    if (i > dividerIndex && record['Radian Notes'] && record['Radian Notes'].length > 0 && key != 'Radian Notes') {
+                        newRecord[key] = null;
                     }
                     else {
                         newRecord[key] = record[key];
@@ -357,7 +350,7 @@ const createReport = async (req, res) => {
             let sql = xlsx.utils.aoa_to_sheet(sqlLogic);
 
             newWb.Sheets["Data"] = data;
-            newWb.Sheets["SQL"] = sql;
+            // newWb.Sheets["SQL"] = sql;
 
             newWb.Props = {
                 Title: "Report",

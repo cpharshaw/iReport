@@ -50,8 +50,8 @@ const excelFileFormatter = async excelFile => {
 
         Object.keys(tempObj2).forEach(key => {
             const nr = key.trim().toLowerCase().replace(/\W/g, '_') == "date" ? "date1" : key.trim().toLowerCase().replace(/\W/g, '_');
-            const nr_adj_cert = nr == "cert" ? "Cert" : nr;
-            finalRecord[nr_adj_cert] = nr_adj_cert == "Cert" ? record[key].toString().trim() : record[key];
+            const nr_adj_cert = nr == "cert" ? "Cert" : nr == "file" ? "file_" : nr;
+            finalRecord[nr_adj_cert] = nr_adj_cert == "Cert" ? record[key].toString().trim().replace('"','').replace("'",'') : typeof record[key] == "string" ? record[key].replace('"','').replace("'",'') : record[key];
         });
 
         for (const value in finalRecord) {

@@ -29,7 +29,7 @@ const sqlLogic = (
                                     and
                                 prod.PremiumServicerLenderID not in (select distinct customerID from #customerIDs)
                             ) then '(Not located in servicing portfolio)' 
-                            else ''
+                            else null
                         end as [Radian Notes],` 
                         : 
                     null
@@ -56,7 +56,7 @@ const sqlLogic = (
         ;
     
         drop table #customerIDs;
-    `
+    `;
     //     where (
     //         prod.CertificateNum is not null
     //             and
@@ -148,7 +148,7 @@ const sqlLogic = (
 
         drop table #customerIDs
         ;
-    `
+    `;
 
     const query = reportType == "append" ? queryAppend : queryPortfolio;
 
